@@ -6,7 +6,7 @@ Transform your ComfyUI to a powerful API, serving all your saved workflows into 
 
 **Key features :**
 
-- **✨ Plug and play** - Automatically serve your ComfyUI workflows into `/api/workflows/*`
+- **✨ Plug and play** - Automatically serve your ComfyUI workflows into `/api/workflows/*` HTTP endpoints
 - **🏷️ Annotations** - Expose your inputs and outputs by `[tagging]` your node names.
 - **⚡ Fast** - No added overload, powerful node caching.
 
@@ -23,42 +23,40 @@ Transform your ComfyUI to a powerful API, serving all your saved workflows into 
 
 Install by cloning this project into your `custom_nodes` folder.
 
-```
+```sh
 cd custom_nodes
-git clone https://github.com/IfnotFR/ComfyUI-Fast-API.git
+git clone https://github.com/IfnotFr/ComfyUI-Fast-API
 ```
 
 ## Quick Start
 
-1. Annotate editable inputs, for example rename the `KSampler` by `KSampler [my sampler]`
+1. Annotate editable inputs, for example rename the `KSampler` by `KSampler [my-sampler]`
 
-2. Annotate your output, for example `Preview Image` into `Preview Image [my awesome image]`.
+2. Annotate your output, for example `Preview Image` into `Preview Image [my-output]`
 
-3. Click on `Workflow > Save API Endpoint`, write your endpoint name, you can now run it by doing a `POST /api/workflows/ENDPOINT_NAME`.
+3. Click on `Workflow > Save API Endpoint` and type your endpoint name.
 
-**Example Request :**
+4. You can now run the workflow from the API by doing a `POST /api/workflows/ENDPOINT_NAME` with a json payload like :
 
-`POST /api/workflows/ENDPOINT_NAME`
+    ```json
+    {
+      "my-sampler": {
+        "seed": 1234
+      }
+    }
+    ```
 
-```
-{
-  "my sampler": {
-    seed: 1234
-  }
-}
-```
+5. Handle the API response by your client, in our example we have annotated one out `[my-output]` :
 
-**Example Response (base64) :**
+    ```json
+    {
+      "my-output": [
+        "V2VsY29tZSB0byA8Yj5iYXNlNjQuZ3VydTwvYj4h..."
+      ]
+    }
+    ```
 
-```
-{
-  "my awesome image": [
-    "V2VsY29tZSB0byA8Yj5iYXNlNjQuZ3VydTwvYj4h..."
-  ]
-}
-```
-
-## Annotations
+## Node Annotations
 
 ### Free Annotations
 
@@ -68,40 +66,55 @@ git clone https://github.com/IfnotFR/ComfyUI-Fast-API.git
 ### Internal Annotations
 
 - `[!bypass]`: Bypass this node when running from API (but keep it in ComfyUI).
-  - Usefull if you want to lighten your workflow from your debug nodes when running from API.
+  - Usefull if you want to remove debug nodes from the workflow when running from API.
 - `[!cache]`: Globally register this node to be included on each API call.
-  - It allows you to keep the node in memory, denying ComfyUI to unload it. See How to cache models.
+  - It allows you to keep the node in memory, denying ComfyUI to unload it. See **How to cache models**.
 
-## Uploading images
+## API Call Payloads
 
-**From URL :**
+Each annotated node exposing inputs can be changed by a payload where `<node-name>.<input-name> = <value>`.
 
-`POST /api/workflows/ENDPOINT_NAME`
+Simple primitive values :
 
-```
+```json
 {
-  "input": {
+  "my-sampler": {
+    "seed": 1234,
+    "steps": 20,
+    "cfg": 7
+  },
+  "my-positive-prompt": {
+    "text": "beautiful scenery nature glass bottle landscape, , purple galaxy bottle,"
+  }
+}
+```
+
+Uploading images (from base64, from url) :
+
+```json
+{
+  "my-image-base64": {
     "image": {
       "type": "file",
-			"url": "V2VsY29tZSB0byA8Yj5iYXNlNjQuZ3VydTwvYj4h ..."
+      "url": "https://foo.bar/image.png",
+      "name": "optional_name.png"
+    }
+  },
+  "my-image-url": {
+    "image": {
+      "type": "file",
+      "content": "V2VsY29tZSB0byA8Yj5iYXNlNjQuZ3VydTwvYj4h ...",
+      "name": "required_name.jpg",
     }
   }
 }
 ```
 
-**From Base64 :**
+You can also bypass node by passing the `false` value instead of an object, it will bypass it like the `[!bypass]` annotation :
 
-`POST /api/workflows/ENDPOINT_NAME`
-
-```
+```json
 {
-  "input": {
-    "image": {
-      "type": "file",
-      "name": "my-file.png"
-			"content": "https://foo.bar/image.png"
-    }
-  }
+  "my-node-to-bypass": false
 }
 ```
 
