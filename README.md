@@ -1,6 +1,6 @@
 # ⚡ ComfyUI Fast API
 
-Transform your ComfyUI to a powerful API, serving all your saved workflows into ready to use HTTP endpoints.
+Transform your ComfyUI into a powerful API, exposing all your saved workflows as ready-to-use HTTP endpoints.
 
 > **WIP Warning** heavy development and not fully battle-tested, this package may contain bugs, please do not use in production for now.
 
