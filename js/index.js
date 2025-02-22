@@ -17,6 +17,8 @@ app.registerExtension({
           defaultValue: name
         });
 
+        if (!name) return;
+
         app.graph.extra.fast_api = {
           name
         };
