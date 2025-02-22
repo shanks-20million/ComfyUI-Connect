@@ -36,7 +36,7 @@ git clone https://github.com/IfnotFr/ComfyUI-Fast-API
 
 3. Click on `Workflow > Save API Endpoint` and type your endpoint name.
 
-4. You can now run the workflow from the API by doing a `POST /api/workflows/ENDPOINT_NAME` with a json payload like :
+4. You can now run the workflow from the API by doing a `POST http://localhost:8188/api/workflows/ENDPOINT_NAME` with a json payload like :
 
     ```json
     {
