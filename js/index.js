@@ -2,14 +2,14 @@ import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
 
 app.registerExtension({
-  name: "Comfy.FastAPI",
+  name: "Comfy.Connect",
   commands: [
     {
-      id: "fastapi-save-api-endpoint",
+      id: "comfy-connect-save-api-endpoint",
       label: "Save API Endpoint",
       icon: "pi pi-bolt",
       function: async () => {
-        let name = app.graph.extra?.fast_api?.name ?? "";
+        let name = app.graph.extra?.comfy_connect?.name ?? "";
 
         name = await app.extensionManager.dialog.prompt({
           title: "Endpoint Name",
@@ -19,14 +19,14 @@ app.registerExtension({
 
         if (!name) return;
 
-        app.graph.extra.fast_api = {
+        app.graph.extra.comfy_connect = {
           name
         };
 
         const { output } = await app.graphToPrompt();
         await api
-          .fetchApi("/fast_api/workflows", {
-            method: "POST",
+          .fetchApi("/connect/workflows", {
+            method: "PUT",
             body: JSON.stringify({ name, workflow: output }),
             cache: "no-store"
           })
@@ -40,7 +40,7 @@ app.registerExtension({
         app.extensionManager.toast.add({
           severity: "success",
           summary: "API Endpoint Saved",
-          detail: `The endpoint "/api/workflows/${name}" has been saved.`,
+          detail: `The endpoint "/api/connect/workflows/${name}" has been saved.`,
           life: 3000
         });
       }
@@ -50,7 +50,7 @@ app.registerExtension({
   menuCommands: [
     {
       path: ["Workflow"],
-      commands: ["fastapi-save-api-endpoint"]
+      commands: ["comfy-connect-save-api-endpoint"]
     }
   ],
 

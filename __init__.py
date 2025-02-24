@@ -8,12 +8,12 @@ NODE_CLASS_MAPPINGS = {}
 __all__ = ["NODE_CLASS_MAPPINGS"]
 version = "V0.0.1"
 
-print(f"⚡⚡⚡ Loading: FAST API ({version})")
+print(f"⚡⚡⚡ Loading: ComfyUI Connect ({version})")
 
 manager = WorkflowManager()
 
 
-@server.PromptServer.instance.routes.post("/fast_api/workflows")
+@server.PromptServer.instance.routes.put("/connect/workflows")
 async def save_workflow(request):
     try:
         data = await request.json()
@@ -31,7 +31,7 @@ async def save_workflow(request):
         return web.json_response({"status": "error", "message": str(e)}, status=500)
 
 
-@server.PromptServer.instance.routes.delete("/fast_api/workflows/{name}")
+@server.PromptServer.instance.routes.delete("/connect/workflows/{name}")
 async def delete_workflow(request):
     name = request.match_info["name"]
     try:
@@ -47,7 +47,7 @@ async def delete_workflow(request):
         return web.json_response({"status": "error", "message": str(e)}, status=500)
 
 
-@server.PromptServer.instance.routes.post("/workflows/{name}")
+@server.PromptServer.instance.routes.post("/connect/workflows/{name}")
 async def execute_workflow(request):
     params = await request.json()
     name = request.match_info["name"]
@@ -64,7 +64,7 @@ async def execute_workflow(request):
         return web.json_response({"status": "error", "message": str(e)}, status=500)
 
 
-@server.PromptServer.instance.routes.get("/workflows")
+@server.PromptServer.instance.routes.get("/connect/workflows")
 async def list_workflows(request):
     try:
         workflows = await manager.list_workflows()
@@ -73,7 +73,7 @@ async def list_workflows(request):
         return web.json_response({"status": "error", "message": str(e)}, status=500)
 
 
-@server.PromptServer.instance.routes.get("/workflow/cache_nodes")
+@server.PromptServer.instance.routes.get("/connect/workflow/cache_nodes")
 async def get_workflow(request):
     try:
         cached_nodes = manager.get_workflows_cached_nodes()
@@ -82,7 +82,7 @@ async def get_workflow(request):
         return web.json_response({"status": "error", "message": str(e)}, status=500)
 
 
-@server.PromptServer.instance.routes.get("/workflows/{name}")
+@server.PromptServer.instance.routes.get("/connect/workflows/{name}")
 async def get_workflow(request):
     name = request.match_info["name"]
     try:

@@ -10,7 +10,7 @@ class Config:
         os.path.dirname(folder_paths.__file__),
         "user",
         "default",
-        "ComfyUI-Fast-API",
+        "ComfyUI-Connect",
         "workflows",
     )
     INPUT_PATH: str = os.path.join(os.path.dirname(folder_paths.__file__), "input")

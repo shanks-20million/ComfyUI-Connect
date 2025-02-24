@@ -1,4 +1,4 @@
-# ⚡ ComfyUI Fast API
+# ⚡ ComfyUI Connect
 
 Transform your ComfyUI into a powerful API, exposing all your saved workflows as ready-to-use HTTP endpoints.
 
@@ -6,7 +6,7 @@ Transform your ComfyUI into a powerful API, exposing all your saved workflows as
 
 **Key features :**
 
-- **✨ Plug and play** - Automatically serve your ComfyUI workflows into `/api/workflows/*` HTTP endpoints
+- **✨ Plug and play** - Automatically serve your ComfyUI workflows into `/api/connect/workflows/*` HTTP endpoints
 - **🏷️ Annotations** - Expose your inputs and outputs by `[tagging]` your node names.
 - **⚡ Fast** - No added overload, powerful node caching.
 
@@ -25,7 +25,7 @@ Install by cloning this project into your `custom_nodes` folder.
 
 ```sh
 cd custom_nodes
-git clone https://github.com/IfnotFr/ComfyUI-Fast-API
+git clone https://github.com/IfnotFr/ComfyUI-Connect
 ```
 
 ## Quick Start
@@ -36,7 +36,7 @@ git clone https://github.com/IfnotFr/ComfyUI-Fast-API
 
 3. Click on `Workflow > Save API Endpoint` and type your endpoint name.
 
-4. You can now run the workflow from the API by doing a `POST http://localhost:8188/api/workflows/ENDPOINT_NAME` with a json payload like :
+4. You can now run the workflow from the API by doing a `POST http://localhost:8188/api/connect/workflows/ENDPOINT_NAME` with a json payload like :
 
     ```json
     {
