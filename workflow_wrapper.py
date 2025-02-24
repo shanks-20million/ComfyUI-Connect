@@ -23,11 +23,8 @@ class WorkflowWrapper(dict):
         If a specific tag is provided, only nodes containing that tag are returned.
         """
         tagged_nodes = []
-        # Regex to detect any of the following in a title:
-        #  - $tag(...) or $tag
-        #  - #tag(...) or #tag
-        #  - !tag
-        pattern = r"(\$[a-zA-Z0-9_-]+(?:\([^)]*\))?|#[a-zA-Z0-9_-]+(?:\([^)]*\))?|![a-zA-Z0-9_-]+)"
+        # Regex to detect tags and capture the base tag name only (without parentheses and content)
+        pattern = r"(\$[a-zA-Z0-9_-]+|#[a-zA-Z0-9_-]+|![a-zA-Z0-9_-]+)(?:\([^)]*\))?"
 
         for node_id, node_data in self.items():
             title = node_data.get("_meta", {}).get("title", "")
@@ -145,7 +142,7 @@ class WorkflowWrapper(dict):
                 f"(possibly not in the filtered list?)."
             )
 
-        tagged_nodes = self.get_tagged_nodes(tag)
+        tagged_nodes = self.get_tagged_nodes("$" + tag)
         if not tagged_nodes:
             raise ValueError(f"Could not update node: no node with tag '{tag}' found.")
 
