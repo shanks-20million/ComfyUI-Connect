@@ -10,7 +10,7 @@ NODE_CLASS_MAPPINGS = {}
 __all__ = ["NODE_CLASS_MAPPINGS"]
 version = "V0.0.1"
 
-print(f"⚡⚡⚡ Loading: ComfyUI Connect ({version})")
+print(f"⚡ Loading: ComfyUI Connect ({version})")
 
 manager = WorkflowManager()
 
@@ -43,6 +43,7 @@ async def save_workflow(request):
         data = await request.json()
         workflow = data["workflow"]
         name = data["name"]
+        print(f"⚡ PUT /connect/workflows - Saving workflow {name}")
         await manager.save_workflow(name, workflow)
         return web.json_response(
             {"status": "success", "message": f"Workflow '{name}' saved."}
@@ -58,6 +59,7 @@ async def save_workflow(request):
 @server.PromptServer.instance.routes.delete("/connect/workflows/{name}")
 async def delete_workflow(request):
     name = request.match_info["name"]
+    print(f"⚡ DELETE /connect/workflows/{name} - Deleting the workflow ...")
     try:
         await manager.delete_workflow(name)
         return web.json_response(
@@ -75,6 +77,7 @@ async def delete_workflow(request):
 async def execute_workflow(request):
     params = await request.json()
     name = request.match_info["name"]
+    print(f"⚡ POST /connect/workflows/{name} - Running workflow ...")
     try:
         result = await manager.execute_workflow(name, params)
         return web.json_response(
