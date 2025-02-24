@@ -7,12 +7,12 @@ Transform your ComfyUI into a powerful API, exposing all your saved workflows as
 **Key features :**
 
 - **✨ Plug and play** - Automatically serve your ComfyUI workflows into `/api/connect/workflows/*` HTTP endpoints
-- **🏷️ Annotations** - Expose your inputs and outputs by `[tagging]` your node names.
+- **📖 Auto Documentation** - Show all your workflows in OpenAPI format at `/api/connect`
+- **🏷️ Annotations** - Add tag in you nodes names : inputs `$my-node` and outputs `#my-result`
 - **⚡ Fast** - No added overload, powerful node caching.
 
 **Planned :**
 
-- **📖 OpenAPI Documentation** - Automated OpenAPI documentation of all available workflows.
 - **🔀 Load Balancer** - Connect each ComfyUI instance to a Load Balancer, features :
   - Workflow syncing between all instances.
   - Heartbeat and speed priority check for best request routing
@@ -30,9 +30,9 @@ git clone https://github.com/IfnotFr/ComfyUI-Connect
 
 ## Quick Start
 
-1. Annotate editable inputs, for example rename the `KSampler` by `KSampler [my-sampler]`
+1. Annotate editable inputs, for example rename the `KSampler` by `KSampler $sampler`
 
-2. Annotate your output, for example `Preview Image` into `Preview Image [my-output]`
+2. Annotate your output, for example `Preview Image` into `Preview Image #output`
 
 3. Click on `Workflow > Save API Endpoint` and type your endpoint name.
 
@@ -40,37 +40,46 @@ git clone https://github.com/IfnotFr/ComfyUI-Connect
 
     ```json
     {
-      "my-sampler": {
+      "sampler": {
         "seed": 1234
       }
     }
     ```
 
-5. Handle the API response by your client, in our example we have annotated one out `[my-output]` :
+5. Handle the API response by your client, in our example we have annotated one out `#output` :
 
     ```json
     {
-      "my-output": [
+      "output": [
         "V2VsY29tZSB0byA8Yj5iYXNlNjQuZ3VydTwvYj4h..."
       ]
     }
     ```
 
-## Node Annotations
+## Annotations Documentation
 
-### Free Annotations
+### Input Annotations
 
-- `[my-node]`: Annotate editable nodes or output nodes.
-- `[my-sampler:seed,steps,cfg]`: Limit exposed inputs of annoted nodes.
+Annotate nodes to expose inputs to be updated by a payload when calling the workflow.
+
+- `$foo`: Allow update of all inputs for this node under the "foo" name.
+- `$foo(bar1,bar2)`: Same as above, but only with the listed inputs.
+- `$foo()`: Deny all input modification, but allow node actions (like bypassing).
+
+### Output Annotations
+
+Annotate nodes to retrieve their result into base64 encoded as array in the response.
+
+- `#foo`: Return the result in base64 array.
 
 ### Internal Annotations
 
-- `[!bypass]`: Bypass this node when running from API (but keep it in ComfyUI).
+- `!bypass`: Bypass this node when running from API (but keep it in ComfyUI).
   - Usefull if you want to remove debug nodes from the workflow when running from API.
-- `[!cache]`: Globally register this node to be included on each API call.
+- `!cache`: Globally register this node to be included on each API call.
   - It allows you to keep the node in memory, denying ComfyUI to unload it. See **How to cache models**.
 
-## API Call Payloads
+## Payload Documentation
 
 Each annotated node exposing inputs can be changed by a payload where `<node-name>.<input-name> = <value>`.
 
@@ -159,6 +168,7 @@ Then, running `a.json` will :
 
 ## TODO
 
+- [] Retrieve all default values from the workflow to fill openapi documentation values
 - [] Find a way to hook the save event, for replacing the "Save API Endpoint" step for updating workflows
 - [] Default configuration should be loaded from environment (paths, endpoint ...)
 - [] Editable configuration (from the ComfyUI config interface ?)

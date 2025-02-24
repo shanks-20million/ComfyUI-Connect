@@ -2,6 +2,8 @@ import server
 from aiohttp import web
 
 from .workflow_manager import WorkflowManager
+from .config import config
+from .openapi_spec_generator import OpenAPISpecGenerator
 
 WEB_DIRECTORY = "./js"
 NODE_CLASS_MAPPINGS = {}
@@ -11,6 +13,28 @@ version = "V0.0.1"
 print(f"⚡⚡⚡ Loading: ComfyUI Connect ({version})")
 
 manager = WorkflowManager()
+
+
+@server.PromptServer.instance.routes.get("/connect")
+async def index(request):
+    index = f"{config.COMFY_PATH}/custom_nodes/ComfyUI-Connect/www/index.html"
+
+    with open(index, "r") as file:
+        html = file.read()
+
+    return web.Response(text=html, content_type="text/html")
+
+
+@server.PromptServer.instance.routes.get("/connect/openapi.json")
+async def index(request):
+    workflows = []
+    names = await manager.list_workflows()
+    for name in names:
+        workflow = await manager.get_workflow(name)
+        workflows.append(workflow)
+
+    generator = OpenAPISpecGenerator(workflows)
+    return web.json_response(generator.generate())
 
 
 @server.PromptServer.instance.routes.put("/connect/workflows")
@@ -60,15 +84,6 @@ async def execute_workflow(request):
         return web.json_response(
             {"status": "error", "message": f"Workflow '{name}' not found."}, status=404
         )
-    except Exception as e:
-        return web.json_response({"status": "error", "message": str(e)}, status=500)
-
-
-@server.PromptServer.instance.routes.get("/connect/workflows")
-async def list_workflows(request):
-    try:
-        workflows = await manager.list_workflows()
-        return web.json_response({"status": "success", "workflows": workflows})
     except Exception as e:
         return web.json_response({"status": "error", "message": str(e)}, status=500)
 
