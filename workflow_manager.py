@@ -205,11 +205,11 @@ class WorkflowManager:
                                     f"Error writing file {value.get('name', 'unknown file')} : {e}"
                                 )
                         else:
-                            # Handling for other dict-based types, if needed
+                            # TODO: Handling for other dict-based types, if needed
                             pass
                     else:
-                        # Handling for other non-dict values, if needed
-                        pass
+                        # Update the workflow with the value
+                        workflow.update_tagged_nodes_input(tag, input_name, value)
 
         # Run the workflow asynchronously using the configured client
         images = await (await config.client()).run(workflow)
