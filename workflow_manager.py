@@ -219,7 +219,7 @@ class WorkflowManager:
         for node_id, node_images in images.items():
             tags = workflow.get_node_tags(node_id)
             for tag in tags:
-                response[tag] = node_images
+                response[tag[1:]] = node_images
 
         return response
 
