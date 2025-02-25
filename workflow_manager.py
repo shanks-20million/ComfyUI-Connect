@@ -152,10 +152,18 @@ class WorkflowManager:
 
         # Process each tag in the provided parameters
         for tag, payload in (params or {}).items():
+            # If the payload is simply False, bypass all nodes with this tag
             if payload is False:
-                # If the payload is simply False, bypass all nodes with this tag
-                workflow.bypass_nodes(tag)
-            else:
+                try:
+                    workflow.bypass_nodes("$" + tag)
+                except KeyError:
+                    print(f"Tag '{tag}' not found in workflow '{name}'")
+
+                try:
+                    workflow.bypass_nodes("#" + tag)
+                except KeyError:
+                    print(f"Tag '{tag}' not found in workflow '{name}'")
+            elif isinstance(payload, dict):
                 # Otherwise, iterate through the input data for the tag
                 for input_name, value in payload.items():
                     if isinstance(value, dict):
