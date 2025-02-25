@@ -39,78 +39,48 @@ async def index(request):
 
 @server.PromptServer.instance.routes.put("/connect/workflows")
 async def save_workflow(request):
-    try:
-        data = await request.json()
-        workflow = data["workflow"]
-        name = data["name"]
-        print(f"⚡ PUT /connect/workflows - Saving workflow {name}")
-        await manager.save_workflow(name, workflow)
-        return web.json_response(
-            {"status": "success", "message": f"Workflow '{name}' saved."}
-        )
-    except KeyError as e:
-        return web.json_response(
-            {"status": "error", "message": f"Missing key: {str(e)}"}, status=400
-        )
-    except Exception as e:
-        return web.json_response({"status": "error", "message": str(e)}, status=500)
+    data = await request.json()
+    workflow = data["workflow"]
+    name = data["name"]
+
+    print(f"⚡ PUT /connect/workflows - Saving workflow {name}")
+    await manager.save_workflow(name, workflow)
+    return web.json_response(
+        {"status": "success", "message": f"Workflow '{name}' saved."}
+    )
 
 
 @server.PromptServer.instance.routes.delete("/connect/workflows/{name}")
 async def delete_workflow(request):
     name = request.match_info["name"]
+
     print(f"⚡ DELETE /connect/workflows/{name} - Deleting the workflow ...")
-    try:
-        await manager.delete_workflow(name)
-        return web.json_response(
-            {"status": "success", "message": f"Workflow '{name}' deleted."}
-        )
-    except FileNotFoundError:
-        return web.json_response(
-            {"status": "error", "message": f"Workflow '{name}' not found."}, status=404
-        )
-    except Exception as e:
-        return web.json_response({"status": "error", "message": str(e)}, status=500)
+    await manager.delete_workflow(name)
+    return web.json_response(
+        {"status": "success", "message": f"Workflow '{name}' deleted."}
+    )
 
 
 @server.PromptServer.instance.routes.post("/connect/workflows/{name}")
 async def execute_workflow(request):
     params = await request.json()
     name = request.match_info["name"]
+
     print(f"⚡ POST /connect/workflows/{name} - Running workflow ...")
-    try:
-        result = await manager.execute_workflow(name, params)
-        return web.json_response(
-            {"status": "success", "workflow": name, "result": result}
-        )
-    except FileNotFoundError:
-        return web.json_response(
-            {"status": "error", "message": f"Workflow '{name}' not found."}, status=404
-        )
-    except Exception as e:
-        return web.json_response({"status": "error", "message": str(e)}, status=500)
+    result = await manager.execute_workflow(name, params)
+    return web.json_response({"status": "success", "workflow": name, "result": result})
 
 
 @server.PromptServer.instance.routes.get("/connect/workflow/cache_nodes")
 async def get_workflow(request):
-    try:
-        cached_nodes = manager.get_workflows_cached_nodes()
-        return web.json_response({"status": "success", "nodes": cached_nodes})
-    except Exception as e:
-        return web.json_response({"status": "error", "message": str(e)}, status=500)
+    cached_nodes = manager.get_workflows_cached_nodes()
+    return web.json_response({"status": "success", "nodes": cached_nodes})
 
 
 @server.PromptServer.instance.routes.get("/connect/workflows/{name}")
 async def get_workflow(request):
     name = request.match_info["name"]
-    try:
-        result = await manager.get_workflow(name)
-        return web.json_response(
-            {"status": "success", "workflow": name, "workflow": result}
-        )
-    except FileNotFoundError:
-        return web.json_response(
-            {"status": "error", "message": f"Workflow '{name}' not found."}, status=404
-        )
-    except Exception as e:
-        return web.json_response({"status": "error", "message": str(e)}, status=500)
+    result = await manager.get_workflow(name)
+    return web.json_response(
+        {"status": "success", "workflow": name, "workflow": result}
+    )
