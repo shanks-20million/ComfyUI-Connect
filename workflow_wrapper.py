@@ -1,5 +1,10 @@
 import re
 
+def lowerSingular(string):
+    string = string.lower()
+    if string.endswith('s'):
+        string = string[:-1]
+    return string
 
 class WorkflowWrapper(dict):
     """
@@ -157,6 +162,10 @@ class WorkflowWrapper(dict):
                     f"'{tag}' (node found at id {node_id})."
                 )
 
+            print(
+                f"⚡ Updating input '{input_key}' of node {node_id} with tag '{tag}' with new value: {new_value}"
+            )
+
             node_inputs[input_key] = new_value
 
     def bypass_nodes(self, tag: str) -> None:
@@ -164,41 +173,33 @@ class WorkflowWrapper(dict):
         Removes nodes that match a given tag (e.g., !bypass)
         and attempts to reconnect neighboring inputs/outputs in place of the removed node.
         """
+        print(f"⚡ Trying to bypass nodes with tag {tag} ...")
+
         tagged_nodes = self.get_tagged_nodes(tag)
 
         for skip_node_data in tagged_nodes:
             skip_node_id = skip_node_data["id"]
+            skip_node = skip_node_data["node"]
             if not skip_node_id:
                 continue
 
-            skip_node = self[skip_node_id]
-
             # Remove the node from the workflow
+            print(f"⚡ Bypassing node {skip_node["class_type"]} (id {skip_node_id})")
             del self[skip_node_id]
 
-            # Find any node that references the skipped node as an input
-            target_node_id = None
-            for node_id, node_data in self.items():
-                for input_value in node_data.get("inputs", {}).values():
-                    if isinstance(input_value, list) and len(input_value) > 0:
-                        if input_value[0] == skip_node_id:
-                            target_node_id = node_id
-                            break
-                if target_node_id:
-                    break
-
-            if not target_node_id:
-                continue
-
-            # Re-wire the target node if possible
-            target_node = self[target_node_id]
-            for target_input_key in target_node.get("inputs", {}):
-                singular_input_key = target_input_key[:-1]
-                if singular_input_key in skip_node.get("inputs", {}):
-                    target_node["inputs"][target_input_key] = skip_node["inputs"][
-                        singular_input_key
-                    ]
-                    break
+            # Reference all inputs wires that connects this node
+            input_wires = {}
+            for input_name, input_value in skip_node.get("inputs", {}).items():
+                if isinstance(input_value, list):
+                    input_wires[lowerSingular(input_name)] = input_value
+            
+            # Now search for all nodes with inputs referencing to the node we will remove
+            for ref_node_id, ref_node in self.items():
+                for input_name, input_value in ref_node.get("inputs", {}).items():
+                    if isinstance(input_value, list):
+                      if(input_value[0] == skip_node_id):
+                          print(f"⚡ Replacing input wire for {ref_node["class_type"]} (id {ref_node_id}): FROM {ref_node["inputs"][input_name]} TO {input_wires[lowerSingular(input_name)]}")
+                          ref_node["inputs"][input_name] = input_wires[lowerSingular(input_name)]
 
     @staticmethod
     def _parse_tag(tag_str: str):
