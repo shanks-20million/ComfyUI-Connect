@@ -77,7 +77,7 @@ class OpenAPISpecGenerator:
             response_schema = {"type": "object", "properties": response_properties}
 
             # Add an entry to the OpenAPI "paths"
-            openapi_spec["paths"][f"/api/connect/{workflow_name}"] = {
+            openapi_spec["paths"][f"/api/connect/workflows/{workflow_name}"] = {
                 "post": {
                     "summary": f"{workflow_name}",
                     "requestBody": {
