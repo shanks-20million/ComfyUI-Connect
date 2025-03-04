@@ -1,5 +1,6 @@
 import os
 import json
+import copy
 import aiofiles
 import base64
 import requests
@@ -138,7 +139,7 @@ class WorkflowManager:
             raise FileNotFoundError(f"Workflow '{name}' not found.")
 
         # Wrap the workflow in a WorkflowWrapper object for convenience
-        workflow = WorkflowWrapper(self.workflows[name])
+        workflow = WorkflowWrapper(copy.deepcopy(self.workflows[name]))
 
         # Bypass any nodes tagged with "!bypass" if present
         workflow.bypass_nodes("!bypass")
@@ -154,15 +155,9 @@ class WorkflowManager:
         for tag, payload in (params or {}).items():
             # If the payload is simply False, bypass all nodes with this tag
             if payload is False:
-                try:
-                    workflow.bypass_nodes("$" + tag)
-                except KeyError:
-                    print(f"Tag '{tag}' not found in workflow '{name}'")
+                workflow.bypass_nodes("$" + tag)
+                workflow.bypass_nodes("#" + tag)
 
-                try:
-                    workflow.bypass_nodes("#" + tag)
-                except KeyError:
-                    print(f"Tag '{tag}' not found in workflow '{name}'")
             elif isinstance(payload, dict):
                 # Otherwise, iterate through the input data for the tag
                 for input_name, value in payload.items():
@@ -184,6 +179,10 @@ class WorkflowManager:
                                     ) as f:
                                         f.write(file_content)
 
+                                    print(
+                                        f"File {filename} written to {config.INPUT_PATH} and specified into {tag}.{input_name}"
+                                    )
+
                                 # If "url" is present, download the file and store it
                                 elif "url" in value and value["url"]:
                                     filename = value.get("name")
@@ -196,6 +195,10 @@ class WorkflowManager:
                                         os.path.join(config.INPUT_PATH, filename), "wb"
                                     ) as f:
                                         f.write(response.content)
+
+                                    print(
+                                        f"File {filename} downloaded from {value['url']} and written to {config.INPUT_PATH} and specified into {tag}.{input_name}"
+                                    )
                                 else:
                                     # If there's no valid content or URL, skip
                                     print(
