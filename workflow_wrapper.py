@@ -1,10 +1,12 @@
 import re
 
+
 def lowerSingular(string):
     string = string.lower()
-    if string.endswith('s'):
+    if string.endswith("s"):
         string = string[:-1]
     return string
+
 
 class WorkflowWrapper(dict):
     """
@@ -192,14 +194,25 @@ class WorkflowWrapper(dict):
             for input_name, input_value in skip_node.get("inputs", {}).items():
                 if isinstance(input_value, list):
                     input_wires[lowerSingular(input_name)] = input_value
-            
+
+            print(f"⚡ Node to bypass has the wires {input_wires}")
+
             # Now search for all nodes with inputs referencing to the node we will remove
             for ref_node_id, ref_node in self.items():
                 for input_name, input_value in ref_node.get("inputs", {}).items():
                     if isinstance(input_value, list):
-                      if(input_value[0] == skip_node_id):
-                          print(f"⚡ Replacing input wire for {ref_node["class_type"]} (id {ref_node_id}): FROM {ref_node["inputs"][input_name]} TO {input_wires[lowerSingular(input_name)]}")
-                          ref_node["inputs"][input_name] = input_wires[lowerSingular(input_name)]
+                        if input_value[0] == skip_node_id:
+                            if lowerSingular(input_name) in input_wires:
+                                print(
+                                    f"⚡ In {ref_node["class_type"]} (id {ref_node_id}), input {input_name} is now using wire {input_wires[lowerSingular(input_name)]}"
+                                )
+                                ref_node["inputs"][input_name] = input_wires[
+                                    lowerSingular(input_name)
+                                ]
+                            else:
+                                print(
+                                    f"⚡ Could not find wire for {input_name} in {ref_node["class_type"]} (id {ref_node_id})"
+                                )
 
     @staticmethod
     def _parse_tag(tag_str: str):
