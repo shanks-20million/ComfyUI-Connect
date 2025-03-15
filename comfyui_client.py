@@ -63,11 +63,12 @@ class ComfyUIClient:
 
         history = (await self.get_history(prompt_id))[prompt_id]
         for node_id, node_output in history["outputs"].items():
+            print(node_output)
             images_output = []
             if "images" in node_output:
                 for image in node_output["images"]:
                     image_data = await self.get_image(
-                        image["filename"], image["subfolder"], image["type"]
+                        image["filename"], image.get("subfolder", ""), image["type"]
                     )
                     images_output.append(image_data)
             output_images[node_id] = images_output
