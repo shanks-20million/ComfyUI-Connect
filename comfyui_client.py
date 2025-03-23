@@ -63,7 +63,6 @@ class ComfyUIClient:
 
         history = (await self.get_history(prompt_id))[prompt_id]
         for node_id, node_output in history["outputs"].items():
-            print(node_output)
             images_output = []
             if "images" in node_output:
                 for image in node_output["images"]:
