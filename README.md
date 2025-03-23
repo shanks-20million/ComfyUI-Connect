@@ -6,9 +6,9 @@ Transform your ComfyUI into a powerful API, exposing all your saved workflows as
 
 **Key features :**
 
-- **✨ Plug and play** - Automatically serve your ComfyUI workflows into `/api/connect/workflows/*` HTTP endpoints
-- **📖 Auto Documentation** - Show all your workflows in OpenAPI format at `/api/connect`
-- **🏷️ Annotations** - Add tag in you nodes names : inputs `$my-node` and outputs `#my-result`
+- **✨ Plug and play** - Automatically serve your ComfyUI workflows into `/api/connect/workflows/*` endpoints
+- **📖 Auto Documentation** - Show all your workflows in OpenAPI format using `/api/connect` internal endpoint
+- **🏷️ Annotations** - Add tag in you nodes names for referencing inputs `$my-node` and outputs `#my-result`
 - **⚡ Fast** - No added overload, powerful node caching.
 
 **Planned :**
@@ -102,14 +102,14 @@ Uploading images (from base64, from url) :
 
 ```json
 {
-  "my-image-base64": {
+  "load-image-node": {
     "image": {
       "type": "file",
       "url": "https://foo.bar/image.png",
       "name": "optional_name.png"
     }
   },
-  "my-image-url": {
+  "load-image-node-2": {
     "image": {
       "type": "file",
       "content": "V2VsY29tZSB0byA8Yj5iYXNlNjQuZ3VydTwvYj4h ...",
@@ -119,7 +119,7 @@ Uploading images (from base64, from url) :
 }
 ```
 
-You can also bypass node by passing the `false` value instead of an object, it will bypass it like the `[!bypass]` annotation :
+You can also bypass node by passing the `false` value instead of an object, it will bypass it like the `!bypass` annotation :
 
 ```json
 {
@@ -179,15 +179,19 @@ Then, running `a.json` will :
 
 ComfyUI ecosystem is actually working to solve the deployment and scalability approach when it comes to run ComfyUI Workflows, but ...
 
-**Working with JSON workflows has limitations**
-
-- Complicated json file versionning, and it is a pain to export each time you do a modification.
-- I can be a challenge to edit workflows on the fly by your app (specially for bypassing nodes etc ...)
-
-**Pusing workflows into clouds** ([ComfyDeploy](https://comfydeploy.com/), [RunComfy](https://www.runcomfy.com/), [Replicate](https://replicate.com/), [RunPod](https://www.runpod.io/) etc ...) **can have insane speed issues, hard pricing, and features limitations**
+**1. Pusing workflows into clouds** ([ComfyDeploy](https://comfydeploy.com/), [RunComfy](https://www.runcomfy.com/), [Replicate](https://replicate.com/), [RunPod](https://www.runpod.io/) etc ...) **can have insane speed issues, violent pricing, and features limitations**
 
 - Simple workflows of 5s can take 15s, 30s and up to minutes due to cold start and the provider queue system overload.
 - In managed cloud it can be faster without cold start, but you are limited to available models, custom nodes, etc ...
+
+**2. In-house JSON workflows management is complicated**
+
+- Painful json file versionning, and it is time consuming to sync each time you do a modification.
+- I can be a challenge to edit workflows on the fly by your app (specially for bypassing nodes etc ...)
+
+**So, Here is my solution:**
+
+A [ComfyUI-Connect](https://github.com/Good-Dream-Studio/ComfyUI-Connect) plugin to convert ComfyUI into a REST API, and a separate [NodeJS Gateway](https://github.com/Good-Dream-Studio/gateway-connect) server to handle them in a load balanced cluster.
 
 ---
 
