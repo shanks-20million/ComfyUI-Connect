@@ -3,6 +3,15 @@ import { api } from "../../scripts/api.js";
 
 app.registerExtension({
   name: "Comfy.Connect",
+
+  settings: [
+    {
+      id: "Connect.Gateway",
+      name: "Endpoint URL",
+      type: "text"
+    }
+  ],
+
   commands: [
     {
       id: "comfy-connect-save-api-endpoint",
@@ -52,7 +61,5 @@ app.registerExtension({
       path: ["Workflow"],
       commands: ["comfy-connect-save-api-endpoint"]
     }
-  ],
-
-  async setup() {}
+  ]
 });

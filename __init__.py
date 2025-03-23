@@ -1,5 +1,8 @@
 import server
 from aiohttp import web
+import socketio
+import asyncio
+import json, os
 
 from .workflow_manager import WorkflowManager
 from .config import config
@@ -13,6 +16,61 @@ version = "V0.0.1"
 print(f"⚡ Loading: ComfyUI Connect ({version})")
 
 manager = WorkflowManager()
+
+# ####################
+# SOCKET IO
+# ####################
+
+sio = socketio.AsyncClient()
+
+
+@sio.event
+async def connect():
+    print("SocketIO client connected")
+
+
+@sio.event
+async def disconnect():
+    print("SocketIO client disconnected")
+
+
+@sio.on("run")
+async def on_run(data):
+    print(f"Received run event with data: {data}")
+    name = data.get("name")
+    params = data.get("params")
+    result = await manager.execute_workflow(name, params)
+    await sio.emit("return", {"name": name, "result": result})
+
+
+async def start_socketio():
+    settings_path = os.path.join("user", "default", "comfy.settings.json")
+    try:
+        with open(settings_path, "r", encoding="utf-8") as f:
+            settings = json.load(f)
+    except Exception as e:
+        print(f"Error loading {settings_path}: {e}")
+        return
+
+    socket_server_url = settings.get("Connect.Gateway")
+    if not socket_server_url:
+        print("Connect.Gateway not configured comfy.settings.json. Disabling SocketIO.")
+        return
+
+    await sio.connect(socket_server_url)
+    print(f"Connected to SocketIO server at {socket_server_url}")
+    await sio.wait()
+
+
+async def init_socketio(app):
+    asyncio.create_task(start_socketio())
+
+
+server.PromptServer.instance.app.on_startup.append(init_socketio)
+
+# ####################
+# ROUTES
+# ####################
 
 
 @server.PromptServer.instance.routes.get("/connect")
