@@ -37,10 +37,11 @@ async def disconnect():
 @sio.on("run")
 async def on_run(data):
     print(f"Received run event with data: {data}")
+    taskId = data.get("taskId")
     name = data.get("name")
     params = data.get("params")
     result = await manager.execute_workflow(name, params)
-    await sio.emit("return", {"name": name, "result": result})
+    await sio.emit("return", {"taskId": taskId, "name": name, "result": result})
 
 
 async def start_socketio():
