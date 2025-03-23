@@ -8,16 +8,9 @@ Transform your ComfyUI into a powerful API, exposing all your saved workflows as
 
 - **✨ Plug and play** - Automatically serve your ComfyUI workflows into `/api/connect/workflows/*` endpoints
 - **📖 Auto Documentation** - Show all your workflows in OpenAPI format using `/api/connect` internal endpoint
-- **🏷️ Annotations** - Add tag in you nodes names for referencing inputs `$my-node` and outputs `#my-result`
+- **🏷️ Easy** - Add tag in you nodes names for referencing inputs `$my-node` and outputs `#my-result`
 - **⚡ Fast** - No added overload, powerful node caching.
-
-**Planned :**
-
-- **🔀 Load Balancer** - Connect each ComfyUI instance to a Load Balancer, features :
-  - Workflow syncing between all instances.
-  - Heartbeat and speed priority check for best request routing
-  - Maybe a small UI for statistics about instances, runs ?
-  - I am working on this on a separate project, stay tuned
+- **🔀 [Load Balancer](https://github.com/Good-Dream-Studio/comfy-connect-gateway)** - Clusterize and monitor your ComfyUI instances with the Gateway.
 
 ## Installation
 
