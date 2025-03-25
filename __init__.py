@@ -3,17 +3,24 @@ from aiohttp import web
 import socketio
 import asyncio
 import json, os
+import folder_paths
 
 from .workflow_manager import WorkflowManager
 from .config import config
 from .openapi_spec_generator import OpenAPISpecGenerator
+
+# Custom print function for standardized logging
+def connect_print(message):
+    """Print with standardized format for ComfyUI-Connect logs"""
+    plugin_name = "ComfyUI-Connect"
+    print(f"⚡ {plugin_name} | {message}")
 
 WEB_DIRECTORY = "./js"
 NODE_CLASS_MAPPINGS = {}
 __all__ = ["NODE_CLASS_MAPPINGS"]
 version = "V0.0.1"
 
-print(f"⚡ Loading: ComfyUI Connect ({version})")
+connect_print(f"Loading: ComfyUI Connect ({version})")
 
 manager = WorkflowManager()
 
@@ -26,17 +33,17 @@ sio = socketio.AsyncClient()
 
 @sio.event
 async def connect():
-    print("SocketIO client connected")
+    connect_print("SocketIO client connected")
 
 
 @sio.event
 async def disconnect():
-    print("SocketIO client disconnected")
+    connect_print("SocketIO client disconnected")
 
 
 @sio.on("run")
 async def on_run(data):
-    print(f"Received run event with data: {data}")
+    connect_print(f"Received run event with data: {data}")
     taskId = data.get("taskId")
     name = data.get("name")
     params = data.get("params")
@@ -45,21 +52,31 @@ async def on_run(data):
 
 
 async def start_socketio():
-    settings_path = os.path.join("user", "default", "comfy.settings.json")
+    settings_path = os.path.join(os.path.dirname(folder_paths.__file__), "user", "default", "comfy.settings.json")
     try:
+        if not os.path.exists(settings_path):
+            connect_print(f"Settings file not found at: {settings_path}")
+            connect_print(f"Gateway is disabled")
+            return
+            
         with open(settings_path, "r", encoding="utf-8") as f:
             settings = json.load(f)
+    except json.JSONDecodeError as e:
+        connect_print(f"Error parsing settings file {settings_path}: {e}")
+        connect_print(f"Gateway is disabled")
+        return
     except Exception as e:
-        print(f"Error loading {settings_path}: {e}")
+        connect_print(f"Error loading {settings_path}: {e}")
+        connect_print(f"Gateway is disabled")
         return
 
     socket_server_url = settings.get("Connect.Gateway")
     if not socket_server_url:
-        print("Connect.Gateway not configured comfy.settings.json. Disabling SocketIO.")
+        connect_print("Connect.Gateway not configured in comfy.settings.json. Disabling SocketIO.")
         return
 
     await sio.connect(socket_server_url)
-    print(f"Connected to SocketIO server at {socket_server_url}")
+    connect_print(f"Connected to SocketIO server at {socket_server_url}")
     await sio.wait()
 
 
@@ -102,7 +119,7 @@ async def save_workflow(request):
     workflow = data["workflow"]
     name = data["name"]
 
-    print(f"⚡ PUT /connect/workflows - Saving workflow {name}")
+    connect_print(f"PUT /connect/workflows - Saving workflow {name}")
     await manager.save_workflow(name, workflow)
     return web.json_response(
         {"status": "success", "message": f"Workflow '{name}' saved."}
@@ -113,7 +130,7 @@ async def save_workflow(request):
 async def delete_workflow(request):
     name = request.match_info["name"]
 
-    print(f"⚡ DELETE /connect/workflows/{name} - Deleting the workflow ...")
+    connect_print(f"DELETE /connect/workflows/{name} - Deleting the workflow ...")
     await manager.delete_workflow(name)
     return web.json_response(
         {"status": "success", "message": f"Workflow '{name}' deleted."}
@@ -125,7 +142,7 @@ async def execute_workflow(request):
     params = await request.json()
     name = request.match_info["name"]
 
-    print(f"⚡ POST /connect/workflows/{name} - Running workflow ...")
+    connect_print(f"POST /connect/workflows/{name} - Running workflow ...")
     result = await manager.execute_workflow(name, params)
     return web.json_response({"status": "success", "workflow": name, "result": result})
 
