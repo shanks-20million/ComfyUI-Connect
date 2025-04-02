@@ -1,19 +1,10 @@
 import server
 from aiohttp import web
-import socketio
-import asyncio
-import json, os
-import folder_paths
-
 from .workflow_manager import WorkflowManager
 from .config import config
 from .openapi_spec_generator import OpenAPISpecGenerator
-
-# Custom print function for standardized logging
-def connect_print(message):
-    """Print with standardized format for ComfyUI-Connect logs"""
-    plugin_name = "ComfyUI-Connect"
-    print(f"⚡ {plugin_name} | {message}")
+from .utils import connect_print
+from .websocket_manager import WebSocketManager
 
 WEB_DIRECTORY = "./js"
 NODE_CLASS_MAPPINGS = {}
@@ -23,73 +14,16 @@ version = "V0.0.1"
 connect_print(f"Loading: ComfyUI Connect ({version})")
 
 manager = WorkflowManager()
-
-# ####################
-# SOCKET IO
-# ####################
-
-sio = socketio.AsyncClient()
-
-
-@sio.event
-async def connect():
-    connect_print("SocketIO client connected")
-
-
-@sio.event
-async def disconnect():
-    connect_print("SocketIO client disconnected")
-
-
-@sio.on("run")
-async def on_run(data):
-    connect_print(f"Received run event with data: {data}")
-    taskId = data.get("taskId")
-    name = data.get("name")
-    params = data.get("params")
-    result = await manager.execute_workflow(name, params)
-    await sio.emit("return", {"taskId": taskId, "name": name, "result": result})
-
-
-async def start_socketio():
-    settings_path = os.path.join(os.path.dirname(folder_paths.__file__), "user", "default", "comfy.settings.json")
-    try:
-        if not os.path.exists(settings_path):
-            connect_print(f"Settings file not found at: {settings_path}")
-            connect_print(f"Gateway is disabled")
-            return
-            
-        with open(settings_path, "r", encoding="utf-8") as f:
-            settings = json.load(f)
-    except json.JSONDecodeError as e:
-        connect_print(f"Error parsing settings file {settings_path}: {e}")
-        connect_print(f"Gateway is disabled")
-        return
-    except Exception as e:
-        connect_print(f"Error loading {settings_path}: {e}")
-        connect_print(f"Gateway is disabled")
-        return
-
-    socket_server_url = settings.get("Connect.Gateway")
-    if not socket_server_url:
-        connect_print("Connect.Gateway not configured in comfy.settings.json. Disabling SocketIO.")
-        return
-
-    await sio.connect(socket_server_url)
-    connect_print(f"Connected to SocketIO server at {socket_server_url}")
-    await sio.wait()
-
+websocket_manager = WebSocketManager(manager)
 
 async def init_socketio(app):
-    asyncio.create_task(start_socketio())
-
+    await websocket_manager.initialize(app)
 
 server.PromptServer.instance.app.on_startup.append(init_socketio)
 
 # ####################
 # ROUTES
 # ####################
-
 
 @server.PromptServer.instance.routes.get("/connect")
 async def index(request):
