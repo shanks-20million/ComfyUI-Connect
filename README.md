@@ -18,7 +18,7 @@ Install by cloning this project into your `custom_nodes` folder.
 
 ```sh
 cd custom_nodes
-git clone https://github.com/IfnotFr/ComfyUI-Connect
+git clone https://github.com/Good-Dream-Studio/ComfyUI-Connect
 ```
 
 ## Quick Start
