@@ -5,6 +5,7 @@ import urllib.parse
 import aiohttp
 import base64
 
+
 class ComfyUIClient:
 
     def __init__(self, COMFY_ENDPOINT):
@@ -20,8 +21,19 @@ class ComfyUIClient:
         )
 
     async def close(self):
-        await self.ws.close()
-        await self.session.close()
+        if self.ws:
+            await self.ws.close()
+        if self.session:
+            await self.session.close()
+        self.ws = None
+        self.session = None
+
+    async def create_ws_connection(self):
+        if not self.session:
+            self.session = aiohttp.ClientSession()
+        return await self.session.ws_connect(
+            f"ws://{self.COMFY_ENDPOINT}/ws?clientId={self.CLIENT_ID}"
+        )
 
     async def queue_prompt(self, prompt):
         payload = {"prompt": prompt, "client_id": self.CLIENT_ID}
@@ -50,26 +62,42 @@ class ComfyUIClient:
     async def run(self, prompt):
         prompt_id = (await self.queue_prompt(prompt))["prompt_id"]
         output_images = {}
-        while True:
-            message = await self.ws.receive()
-            if message.type == aiohttp.WSMsgType.TEXT:
-                data = json.loads(message.data)
-                if (
-                    data["type"] == "executing"
-                    and data["data"]["node"] is None
-                    and data["data"]["prompt_id"] == prompt_id
-                ):
-                    break
+        
+        # Create a new WebSocket connection for this run
+        ws = await self.create_ws_connection()
+        
+        try:
+            while True:
+                message = await ws.receive()
+                if message.type == aiohttp.WSMsgType.TEXT:
+                    data = json.loads(message.data)
+                    if (
+                        data["type"] == "executing"
+                        and data["data"]["node"] is None
+                        and data["data"]["prompt_id"] == prompt_id
+                    ):
+                        break
+                elif message.type == aiohttp.WSMsgType.CLOSED:
+                    raise RuntimeError("WebSocket connection closed unexpectedly")
+                elif message.type == aiohttp.WSMsgType.ERROR:
+                    raise RuntimeError(f"WebSocket error: {message.data}")
 
-        history = (await self.get_history(prompt_id))[prompt_id]
-        for node_id, node_output in history["outputs"].items():
-            images_output = []
-            if "images" in node_output:
-                for image in node_output["images"]:
-                    image_data = await self.get_image(
-                        image["filename"], image.get("subfolder", ""), image["type"]
-                    )
-                    images_output.append(image_data)
-            output_images[node_id] = images_output
+            history = (await self.get_history(prompt_id))[prompt_id]
+            for node_id, node_output in history["outputs"].items():
+                images_output = []
+                if "images" in node_output:
+                    for image in node_output["images"]:
+                        image_data = await self.get_image(
+                            image["filename"], image.get("subfolder", ""), image["type"]
+                        )
+                        images_output.append(image_data)
+                output_images[node_id] = images_output
 
-        return output_images
+            return output_images
+        except Exception as e:
+            # Ensure we close the WebSocket connection on error
+            await ws.close()
+            raise e
+        finally:
+            # Always close the WebSocket connection when done
+            await ws.close()
