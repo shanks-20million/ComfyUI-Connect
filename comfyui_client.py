@@ -4,6 +4,8 @@ import urllib.request
 import urllib.parse
 import aiohttp
 import base64
+import asyncio
+from typing import Dict, List
 
 
 class ComfyUIClient:
@@ -13,27 +15,47 @@ class ComfyUIClient:
         self.COMFY_ENDPOINT = COMFY_ENDPOINT
         self.ws = None
         self.session = None
+        self._message_queue = asyncio.Queue()
+        self._prompt_events: Dict[str, asyncio.Event] = {}
+        self._listener_task = None
 
     async def connect(self):
         self.session = aiohttp.ClientSession()
         self.ws = await self.session.ws_connect(
             f"ws://{self.COMFY_ENDPOINT}/ws?clientId={self.CLIENT_ID}"
         )
+        # Start the global websocket listener
+        self._listener_task = asyncio.create_task(self._listen_websocket())
+
+    async def _listen_websocket(self):
+        try:
+            while True:
+                message = await self.ws.receive()
+                if message.type == aiohttp.WSMsgType.TEXT:
+                    data = json.loads(message.data)
+                    # Put the message in the queue
+                    await self._message_queue.put(data)
+                    # If it's an executing message with no node, it means the prompt is done
+                    if (
+                        data["type"] == "executing"
+                        and data["data"]["node"] is None
+                        and "prompt_id" in data["data"]
+                    ):
+                        prompt_id = data["data"]["prompt_id"]
+                        if prompt_id in self._prompt_events:
+                            self._prompt_events[prompt_id].set()
+        except Exception as e:
+            print(f"WebSocket listener error: {e}")
+            # Restart the listener if it fails
+            self._listener_task = asyncio.create_task(self._listen_websocket())
 
     async def close(self):
+        if self._listener_task:
+            self._listener_task.cancel()
         if self.ws:
             await self.ws.close()
         if self.session:
             await self.session.close()
-        self.ws = None
-        self.session = None
-
-    async def create_ws_connection(self):
-        if not self.session:
-            self.session = aiohttp.ClientSession()
-        return await self.session.ws_connect(
-            f"ws://{self.COMFY_ENDPOINT}/ws?clientId={self.CLIENT_ID}"
-        )
 
     async def queue_prompt(self, prompt):
         payload = {"prompt": prompt, "client_id": self.CLIENT_ID}
@@ -60,28 +82,15 @@ class ComfyUIClient:
             return await response.json()
 
     async def run(self, prompt):
+        # Create an event for this prompt
         prompt_id = (await self.queue_prompt(prompt))["prompt_id"]
-        output_images = {}
-        
-        # Create a new WebSocket connection for this run
-        ws = await self.create_ws_connection()
-        
-        try:
-            while True:
-                message = await ws.receive()
-                if message.type == aiohttp.WSMsgType.TEXT:
-                    data = json.loads(message.data)
-                    if (
-                        data["type"] == "executing"
-                        and data["data"]["node"] is None
-                        and data["data"]["prompt_id"] == prompt_id
-                    ):
-                        break
-                elif message.type == aiohttp.WSMsgType.CLOSED:
-                    raise RuntimeError("WebSocket connection closed unexpectedly")
-                elif message.type == aiohttp.WSMsgType.ERROR:
-                    raise RuntimeError(f"WebSocket error: {message.data}")
+        self._prompt_events[prompt_id] = asyncio.Event()
 
+        try:
+            # Wait for the prompt completion event
+            await self._prompt_events[prompt_id].wait()
+
+            output_images = {}
             history = (await self.get_history(prompt_id))[prompt_id]
             for node_id, node_output in history["outputs"].items():
                 images_output = []
@@ -94,10 +103,6 @@ class ComfyUIClient:
                 output_images[node_id] = images_output
 
             return output_images
-        except Exception as e:
-            # Ensure we close the WebSocket connection on error
-            await ws.close()
-            raise e
         finally:
-            # Always close the WebSocket connection when done
-            await ws.close()
+            # Clean up the event
+            del self._prompt_events[prompt_id]
