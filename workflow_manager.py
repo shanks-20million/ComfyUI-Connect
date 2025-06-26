@@ -165,6 +165,9 @@ class WorkflowManager:
                         # Handle file uploads and URLs
                         if value.get("type") == "file":
                             try:
+                                filename = None
+                                file_path = None
+                                
                                 # If "content" is present, treat it as a base64-encoded file
                                 if "content" in value and value["content"]:
                                     filename = value.get("name")
@@ -172,33 +175,45 @@ class WorkflowManager:
                                         raise ValueError(
                                             "File name is required with content."
                                         )
-                                    file_content = base64.b64decode(value["content"])
-                                    # Write the decoded file to the INPUT_PATH
-                                    with open(
-                                        os.path.join(config.INPUT_PATH, filename), "wb"
-                                    ) as f:
-                                        f.write(file_content)
+                                    file_path = os.path.join(config.INPUT_PATH, filename)
+                                    
+                                    # Check if file already exists
+                                    if os.path.exists(file_path):
+                                        print(
+                                            f"File {filename} already exists in {config.INPUT_PATH}, using existing file for {tag}.{input_name}"
+                                        )
+                                    else:
+                                        file_content = base64.b64decode(value["content"])
+                                        # Write the decoded file to the INPUT_PATH
+                                        with open(file_path, "wb") as f:
+                                            f.write(file_content)
 
-                                    print(
-                                        f"File {filename} written to {config.INPUT_PATH} and specified into {tag}.{input_name}"
-                                    )
+                                        print(
+                                            f"File {filename} written to {config.INPUT_PATH} and specified into {tag}.{input_name}"
+                                        )
 
                                 # If "url" is present, download the file and store it
                                 elif "url" in value and value["url"]:
                                     filename = value.get("name")
                                     if not filename:
                                         filename = value["url"].split("/")[-1]
+                                    
+                                    file_path = os.path.join(config.INPUT_PATH, filename)
+                                    
+                                    # Check if file already exists
+                                    if os.path.exists(file_path):
+                                        print(
+                                            f"File {filename} already exists in {config.INPUT_PATH}, using existing file for {tag}.{input_name}"
+                                        )
+                                    else:
+                                        response = requests.get(value["url"])
+                                        response.raise_for_status()
+                                        with open(file_path, "wb") as f:
+                                            f.write(response.content)
 
-                                    response = requests.get(value["url"])
-                                    response.raise_for_status()
-                                    with open(
-                                        os.path.join(config.INPUT_PATH, filename), "wb"
-                                    ) as f:
-                                        f.write(response.content)
-
-                                    print(
-                                        f"File {filename} downloaded from {value['url']} and written to {config.INPUT_PATH} and specified into {tag}.{input_name}"
-                                    )
+                                        print(
+                                            f"File {filename} downloaded from {value['url']} and written to {config.INPUT_PATH} and specified into {tag}.{input_name}"
+                                        )
                                 else:
                                     # If there's no valid content or URL, skip
                                     print(
@@ -230,7 +245,11 @@ class WorkflowManager:
         for node_id, node_images in images.items():
             tags = workflow.get_node_tags(node_id)
             for tag in tags:
-                response[tag[1:]] = node_images
+                # If there's only one element in the array, return it directly
+                if isinstance(node_images, list) and len(node_images) == 1:
+                    response[tag[1:]] = node_images[0]
+                else:
+                    response[tag[1:]] = node_images
 
         return response
 
