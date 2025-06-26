@@ -27,12 +27,27 @@ server.PromptServer.instance.app.on_startup.append(init_socketio)
 
 @server.PromptServer.instance.routes.get("/connect")
 async def index(request):
-    index = f"{config.COMFY_PATH}/custom_nodes/ComfyUI-Connect/www/index.html"
+    return web.Response(text='''<!doctype html>
+<html>
 
-    with open(index, "r") as file:
-        html = file.read()
+<head>
+  <meta charset="utf-8">
+  <script type="module" src="https://unpkg.com/rapidoc/dist/rapidoc-min.js"></script>
+</head>
 
-    return web.Response(text=html, content_type="text/html")
+<body>
+  <rapi-doc
+    spec-url="/api/connect/openapi.json"
+    theme="dark"
+    show-info = 'false'
+    allow-authentication ='false'
+    allow-server-selection = 'false'
+    theme = 'dark'
+    >
+  </rapi-doc>
+</body>
+
+</html>''', content_type="text/html")
 
 
 @server.PromptServer.instance.routes.get("/connect/openapi.json")
