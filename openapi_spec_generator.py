@@ -1,3 +1,5 @@
+from .config import config
+
 class OpenAPISpecGenerator:
     def __init__(self, workflows: list):
         """
@@ -26,8 +28,8 @@ class OpenAPISpecGenerator:
         """
         # Basic OpenAPI structure
         openapi_spec = {
-            "openapi": "3.0.0",
-            "info": {"title": "Workflow API Documentation", "version": "1.0.0"},
+            "openapi": config.OPENAPI_VERSION,
+            "info": {"title": config.API_TITLE, "version": config.API_VERSION},
             "paths": {},
         }
 

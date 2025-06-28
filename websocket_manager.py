@@ -7,6 +7,7 @@ import time
 
 from .utils import connect_print
 from .gpu_info import get_gpu_info, log_gpu_info
+from .config import config
 
 class WebSocketManager:
     def __init__(self, workflow_manager):
@@ -41,11 +42,11 @@ class WebSocketManager:
                 gpu_info = get_gpu_info()
                 # log_gpu_info(gpu_info)
                 await self.sio.emit("gpu_info", gpu_info)
-            await asyncio.sleep(0.5)  # Attendre 0.5 secondes
+            await asyncio.sleep(config.GPU_INFO_INTERVAL)
     
     async def start_socket_connection(self):
         """Démarre la connexion SocketIO au serveur de passerelle"""
-        settings_path = os.path.join(os.path.dirname(folder_paths.__file__), "user", "default", "comfy.settings.json")
+        settings_path = os.path.join(os.path.dirname(folder_paths.__file__), "user", "default", config.SETTINGS_FILENAME)
         try:
             if not os.path.exists(settings_path):
                 connect_print(f"Fichier de paramètres non trouvé à: {settings_path}")

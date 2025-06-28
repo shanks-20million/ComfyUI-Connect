@@ -146,7 +146,7 @@ class WorkflowManager:
 
         # Merge cached nodes from other workflows into this workflow,
         # using a unique key to avoid collisions
-        key = 1000
+        key = config.CACHED_NODE_KEY_START
         for node in self.get_cached_nodes_except(name):
             key += 1
             workflow[key] = node

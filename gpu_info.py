@@ -1,6 +1,7 @@
 import pynvml
 import time
 from .utils import connect_print
+from .config import config
 
 def get_gpu_info():
     """Retrieves detailed information about installed NVIDIA GPUs"""
@@ -33,8 +34,8 @@ def get_gpu_info():
             
             # Power
             try:
-                power_usage = pynvml.nvmlDeviceGetPowerUsage(handle) / 1000.0  # In watts
-                power_limit = pynvml.nvmlDeviceGetPowerManagementLimit(handle) / 1000.0  # In watts
+                power_usage = pynvml.nvmlDeviceGetPowerUsage(handle) / config.POWER_CONVERSION_FACTOR  # In watts
+                power_limit = pynvml.nvmlDeviceGetPowerManagementLimit(handle) / config.POWER_CONVERSION_FACTOR  # In watts
             except pynvml.NVMLError:
                 power_usage = 0
                 power_limit = 0
