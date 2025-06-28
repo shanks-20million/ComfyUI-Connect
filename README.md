@@ -1,8 +1,6 @@
 # ⚡ ComfyUI Connect
 
-Transform your ComfyUI into a powerful API, exposing all your saved workflows as ready-to-use HTTP endpoints.
-
-> **WIP Warning** heavy development and not fully battle-tested, this package may contain bugs, please do not use in production for now.
+Expose your workflows into HTTP endpoints directly from ComfyUI itself.
 
 **Key features :**
 
@@ -43,11 +41,11 @@ git clone https://github.com/Good-Dream-Studio/ComfyUI-Connect
 
     ```json
     {
-      "output": [
-        "V2VsY29tZSB0byA8Yj5iYXNlNjQuZ3VydTwvYj4h..."
-      ]
+      "output": "V2VsY29tZSB0byA8Yj5iYXNlNjQuZ3VydTwvYj4h..."
     }
     ```
+
+> Multiple values: If you annotate multiple nodes with the same annotation name (`#output` in our example), the json output will contain an array of values instead of a single value.
 
 ## Annotations Documentation
 
@@ -112,6 +110,8 @@ Uploading images (from base64, from url) :
 }
 ```
 
+> Images will be cached and not downloaded/rewritten if the filename already exists.
+
 You can also bypass node by passing the `false` value instead of an object, it will bypass it like the `!bypass` annotation :
 
 ```json
@@ -141,7 +141,7 @@ Finally, running `a.json` again will :
 - Load `dreamshaper.safetensors` into VRAM
 - Execute the rest ...
 
-By putting `[!cache]` annotation on both `Load Checkpoint` workflows you will instruct ComfyUI to **force them to stay in memory** reducing loading times (but increasing VRAM usage).
+By putting `!cache` annotation on both `Load Checkpoint` workflows you will instruct ComfyUI to **force them to stay in memory** reducing loading times (but increasing VRAM usage).
 
 Now, running `a.json` will :
 
@@ -163,7 +163,6 @@ Then, running `a.json` will :
 
 - [] Retrieve all default values from the workflow to fill openapi documentation values
 - [] Find a way to hook the save event, for replacing the "Save API Endpoint" step for updating workflows
-- [] Default configuration should be loaded from environment (paths, endpoint ...)
 - [] Editable configuration (from the ComfyUI config interface ?)
 - [] Test edge cases like image batches, complex workflows ...
 - [] Output as download url instead of base64 option, for bigger files
