@@ -6,10 +6,14 @@ app.registerExtension({
 
   settings: [
     {
-      id: "Connect.ComfyUIEndpoint",
-      name: "ComfyUI Endpoint",
+      id: "Connect.ComfyUIHost",
+      name: "ComfyUI Host",
       type: "text",
-      defaultValue: "localhost:8000",
+    },
+    {
+      id: "Connect.ComfyUIPort",
+      name: "ComfyUI Port",
+      type: "text",
     },
     {
       id: "Connect.GatewayEndpoint",

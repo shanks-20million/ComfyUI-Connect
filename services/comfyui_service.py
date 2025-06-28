@@ -15,19 +15,19 @@ class ComfyUIService:
     Combines client functionality with service-level management.
     Implements singleton pattern for connection management.
     """
-    
+
     _instance = None
-    
+
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance._initialized = False
         return cls._instance
-    
+
     def __init__(self):
         if self._initialized:
             return
-            
+
         self._initialized = True
         self.CLIENT_ID = str(uuid.uuid4())
         self.ws = None
@@ -36,20 +36,15 @@ class ComfyUIService:
         self._prompt_events: Dict[str, asyncio.Event] = {}
         self._listener_task = None
         self._connected = False
-    
-    @property
-    def comfy_endpoint(self):
-        """Get ComfyUI endpoint from settings with default fallback"""
-        return config.user_settings.get("Connect.ComfyUIEndpoint", "localhost:8000")
-    
+
     async def connect(self):
         """Establish connection to ComfyUI"""
         if self._connected:
             return
-            
+
         self.session = aiohttp.ClientSession()
         self.ws = await self.session.ws_connect(
-            f"ws://{self.comfy_endpoint}/ws?clientId={self.CLIENT_ID}"
+            f"ws://{config.comfy_endpoint}/ws?clientId={self.CLIENT_ID}"
         )
         # Start the global websocket listener
         self._listener_task = asyncio.create_task(self._listen_websocket())
@@ -99,7 +94,7 @@ class ComfyUIService:
         payload = {"prompt": prompt, "client_id": self.CLIENT_ID}
         data = json.dumps(payload).encode("utf-8")
         async with self.session.post(
-            f"http://{self.comfy_endpoint}/prompt", data=data
+            f"http://{config.comfy_endpoint}/prompt", data=data
         ) as response:
             return await response.json()
 
@@ -109,7 +104,7 @@ class ComfyUIService:
         params = {"filename": filename, "subfolder": subfolder, "type": folder_type}
         url_values = urllib.parse.urlencode(params)
         async with self.session.get(
-            f"http://{self.comfy_endpoint}/view?{url_values}"
+            f"http://{config.comfy_endpoint}/view?{url_values}"
         ) as response:
             image_binary = await response.read()
             image_base64 = base64.b64encode(image_binary).decode("utf-8")
@@ -119,19 +114,19 @@ class ComfyUIService:
         """Get execution history for a prompt"""
         await self._ensure_connected()
         async with self.session.get(
-            f"http://{self.comfy_endpoint}/history/{prompt_id}"
+            f"http://{config.comfy_endpoint}/history/{prompt_id}"
         ) as response:
             return await response.json()
 
     async def run_workflow(self, workflow: dict) -> dict:
         """
         Execute a workflow and return the generated images.
-        
+
         :param workflow: The workflow to execute
         :return: Dictionary of generated images by node ID
         """
         await self._ensure_connected()
-        
+
         # Create an event for this prompt
         prompt_id = (await self.queue_prompt(workflow))["prompt_id"]
         self._prompt_events[prompt_id] = asyncio.Event()
@@ -159,4 +154,4 @@ class ComfyUIService:
 
 
 # Global service instance
-comfyui_service = ComfyUIService() 
+comfyui_service = ComfyUIService()

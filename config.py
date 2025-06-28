@@ -1,5 +1,6 @@
 import os
 import json
+import sys
 import folder_paths
 
 
@@ -57,6 +58,29 @@ class Config:
                 self._user_settings = json.load(f)
         except (json.JSONDecodeError, Exception):
             self._user_settings = {}
+    
+    def _get_port_from_args(self):
+        """Extract port from command line arguments"""
+        try:
+            for i, arg in enumerate(sys.argv):
+                if arg == "--port" and i + 1 < len(sys.argv):
+                    return int(sys.argv[i + 1])
+        except (ValueError, IndexError):
+            pass
+        return 8000
+    
+    @property
+    def comfy_endpoint(self):
+        """Get ComfyUI endpoint from settings with intelligent defaults"""
+        host = self.user_settings.get("Connect.ComfyUIHost")
+        if not host:
+            host = "127.0.0.1"
+        
+        port = self.user_settings.get("Connect.ComfyUIPort")
+        if not port:
+            port = self._get_port_from_args()
+        
+        return f"{host}:{port}"
 
 
 config = Config()
