@@ -30,13 +30,17 @@ class ComfyUIService:
             
         self._initialized = True
         self.CLIENT_ID = str(uuid.uuid4())
-        self.COMFY_ENDPOINT = config.COMFY_ENDPOINT
         self.ws = None
         self.session = None
         self._message_queue = asyncio.Queue()
         self._prompt_events: Dict[str, asyncio.Event] = {}
         self._listener_task = None
         self._connected = False
+    
+    @property
+    def comfy_endpoint(self):
+        """Get ComfyUI endpoint from settings with default fallback"""
+        return config.user_settings.get("Connect.ComfyUIEndpoint", "localhost:8000")
     
     async def connect(self):
         """Establish connection to ComfyUI"""
@@ -45,7 +49,7 @@ class ComfyUIService:
             
         self.session = aiohttp.ClientSession()
         self.ws = await self.session.ws_connect(
-            f"ws://{self.COMFY_ENDPOINT}/ws?clientId={self.CLIENT_ID}"
+            f"ws://{self.comfy_endpoint}/ws?clientId={self.CLIENT_ID}"
         )
         # Start the global websocket listener
         self._listener_task = asyncio.create_task(self._listen_websocket())
@@ -95,7 +99,7 @@ class ComfyUIService:
         payload = {"prompt": prompt, "client_id": self.CLIENT_ID}
         data = json.dumps(payload).encode("utf-8")
         async with self.session.post(
-            f"http://{self.COMFY_ENDPOINT}/prompt", data=data
+            f"http://{self.comfy_endpoint}/prompt", data=data
         ) as response:
             return await response.json()
 
@@ -105,7 +109,7 @@ class ComfyUIService:
         params = {"filename": filename, "subfolder": subfolder, "type": folder_type}
         url_values = urllib.parse.urlencode(params)
         async with self.session.get(
-            f"http://{self.COMFY_ENDPOINT}/view?{url_values}"
+            f"http://{self.comfy_endpoint}/view?{url_values}"
         ) as response:
             image_binary = await response.read()
             image_base64 = base64.b64encode(image_binary).decode("utf-8")
@@ -115,7 +119,7 @@ class ComfyUIService:
         """Get execution history for a prompt"""
         await self._ensure_connected()
         async with self.session.get(
-            f"http://{self.COMFY_ENDPOINT}/history/{prompt_id}"
+            f"http://{self.comfy_endpoint}/history/{prompt_id}"
         ) as response:
             return await response.json()
 

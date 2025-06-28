@@ -4,9 +4,6 @@ import folder_paths
 
 
 class Config:
-    # Network configuration
-    COMFY_ENDPOINT: str = "127.0.0.1:8000"
-    
     # Path configuration
     WORKFLOWS_PATH: str = os.path.abspath(
         os.path.join(

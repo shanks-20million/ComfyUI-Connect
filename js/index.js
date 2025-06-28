@@ -6,10 +6,16 @@ app.registerExtension({
 
   settings: [
     {
-      id: "Connect.Gateway",
-      name: "Endpoint URL",
-      type: "text"
-    }
+      id: "Connect.ComfyUIEndpoint",
+      name: "ComfyUI Endpoint",
+      type: "text",
+      defaultValue: "localhost:8000",
+    },
+    {
+      id: "Connect.GatewayEndpoint",
+      name: "ComfyUI Gateway Endpoint",
+      type: "text",
+    },
   ],
 
   commands: [
@@ -23,13 +29,13 @@ app.registerExtension({
         name = await app.extensionManager.dialog.prompt({
           title: "Endpoint Name",
           message: "Type the endpoint name",
-          defaultValue: name
+          defaultValue: name,
         });
 
         if (!name) return;
 
         app.graph.extra.comfy_connect = {
-          name
+          name,
         };
 
         const { output } = await app.graphToPrompt();
@@ -37,7 +43,7 @@ app.registerExtension({
           .fetchApi("/connect/workflows", {
             method: "PUT",
             body: JSON.stringify({ name, workflow: output }),
-            cache: "no-store"
+            cache: "no-store",
           })
           .then((response) => {
             console.log(response);
@@ -50,16 +56,16 @@ app.registerExtension({
           severity: "success",
           summary: "API Endpoint Saved",
           detail: `The endpoint "/api/connect/workflows/${name}" has been saved.`,
-          life: 3000
+          life: 3000,
         });
-      }
-    }
+      },
+    },
   ],
 
   menuCommands: [
     {
       path: ["Workflow"],
-      commands: ["comfy-connect-save-api-endpoint"]
-    }
-  ]
+      commands: ["comfy-connect-save-api-endpoint"],
+    },
+  ],
 });
