@@ -1,7 +1,7 @@
 import pynvml
 import time
-from .utils import connect_print
-from .config import config
+from .helpers import connect_print
+from ..config import config
 
 def get_gpu_info():
     """Retrieves detailed information about installed NVIDIA GPUs"""

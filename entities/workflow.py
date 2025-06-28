@@ -8,7 +8,7 @@ def lowerSingular(string):
     return string
 
 
-class WorkflowWrapper(dict):
+class Workflow(dict):
     """
     A workflow wrapper that extends a dictionary of nodes to provide
     additional functionalities such as tagging, filtering, and bypassing nodes.

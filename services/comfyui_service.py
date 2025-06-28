@@ -6,28 +6,53 @@ import aiohttp
 import base64
 import asyncio
 from typing import Dict, List
+from ..config import config
 
 
-class ComfyUIClient:
-
-    def __init__(self, COMFY_ENDPOINT):
+class ComfyUIService:
+    """
+    Service for managing ComfyUI connections and workflow execution.
+    Combines client functionality with service-level management.
+    Implements singleton pattern for connection management.
+    """
+    
+    _instance = None
+    
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance._initialized = False
+        return cls._instance
+    
+    def __init__(self):
+        if self._initialized:
+            return
+            
+        self._initialized = True
         self.CLIENT_ID = str(uuid.uuid4())
-        self.COMFY_ENDPOINT = COMFY_ENDPOINT
+        self.COMFY_ENDPOINT = config.COMFY_ENDPOINT
         self.ws = None
         self.session = None
         self._message_queue = asyncio.Queue()
         self._prompt_events: Dict[str, asyncio.Event] = {}
         self._listener_task = None
-
+        self._connected = False
+    
     async def connect(self):
+        """Establish connection to ComfyUI"""
+        if self._connected:
+            return
+            
         self.session = aiohttp.ClientSession()
         self.ws = await self.session.ws_connect(
             f"ws://{self.COMFY_ENDPOINT}/ws?clientId={self.CLIENT_ID}"
         )
         # Start the global websocket listener
         self._listener_task = asyncio.create_task(self._listen_websocket())
+        self._connected = True
 
     async def _listen_websocket(self):
+        """Listen for WebSocket messages from ComfyUI"""
         try:
             while True:
                 message = await self.ws.receive()
@@ -50,14 +75,23 @@ class ComfyUIClient:
             self._listener_task = asyncio.create_task(self._listen_websocket())
 
     async def close(self):
+        """Close the ComfyUI connection"""
         if self._listener_task:
             self._listener_task.cancel()
         if self.ws:
             await self.ws.close()
         if self.session:
             await self.session.close()
+        self._connected = False
+
+    async def _ensure_connected(self):
+        """Ensure we have an active connection to ComfyUI"""
+        if not self._connected:
+            await self.connect()
 
     async def queue_prompt(self, prompt):
+        """Queue a prompt for execution in ComfyUI"""
+        await self._ensure_connected()
         payload = {"prompt": prompt, "client_id": self.CLIENT_ID}
         data = json.dumps(payload).encode("utf-8")
         async with self.session.post(
@@ -66,6 +100,8 @@ class ComfyUIClient:
             return await response.json()
 
     async def get_image(self, filename, subfolder, folder_type):
+        """Retrieve an image from ComfyUI"""
+        await self._ensure_connected()
         params = {"filename": filename, "subfolder": subfolder, "type": folder_type}
         url_values = urllib.parse.urlencode(params)
         async with self.session.get(
@@ -76,14 +112,24 @@ class ComfyUIClient:
             return image_base64
 
     async def get_history(self, prompt_id):
+        """Get execution history for a prompt"""
+        await self._ensure_connected()
         async with self.session.get(
             f"http://{self.COMFY_ENDPOINT}/history/{prompt_id}"
         ) as response:
             return await response.json()
 
-    async def run(self, prompt):
+    async def run_workflow(self, workflow: dict) -> dict:
+        """
+        Execute a workflow and return the generated images.
+        
+        :param workflow: The workflow to execute
+        :return: Dictionary of generated images by node ID
+        """
+        await self._ensure_connected()
+        
         # Create an event for this prompt
-        prompt_id = (await self.queue_prompt(prompt))["prompt_id"]
+        prompt_id = (await self.queue_prompt(workflow))["prompt_id"]
         self._prompt_events[prompt_id] = asyncio.Event()
 
         try:
@@ -106,3 +152,7 @@ class ComfyUIClient:
         finally:
             # Clean up the event
             del self._prompt_events[prompt_id]
+
+
+# Global service instance
+comfyui_service = ComfyUIService() 

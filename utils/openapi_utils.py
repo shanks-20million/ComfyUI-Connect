@@ -1,4 +1,4 @@
-from .config import config
+from ..config import config
 
 class OpenAPISpecGenerator:
     def __init__(self, workflows: list):

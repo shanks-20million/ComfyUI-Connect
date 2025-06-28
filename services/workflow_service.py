@@ -4,11 +4,12 @@ import copy
 import aiofiles
 import base64
 import requests
-from .workflow_wrapper import WorkflowWrapper
-from .config import config
+from ..entities.workflow import Workflow
+from ..config import config
+from .comfyui_service import comfyui_service
 
 
-class WorkflowManager:
+class WorkflowService:
     """
     Manages workflows by loading them from JSON files, saving, deleting, and executing them.
     Also handles updating workflows and caching certain nodes.
@@ -16,7 +17,7 @@ class WorkflowManager:
 
     def __init__(self):
         """
-        Initializes the WorkflowManager by:
+        Initializes the WorkflowService by:
         - Creating necessary directories if they don't exist.
         - Loading JSON workflow files from disk into memory.
         - Refreshing the cached nodes for all loaded workflows.
@@ -57,7 +58,7 @@ class WorkflowManager:
 
         # Go through each workflow and check for cached nodes
         for workflow_name, workflow_data in self.workflows.items():
-            wrapper = WorkflowWrapper(workflow_data)
+            wrapper = Workflow(workflow_data)
             cached_nodes = wrapper.get_tagged_nodes("!cache")
 
             # Store each cached node with the workflow name for reference
@@ -138,8 +139,8 @@ class WorkflowManager:
         if name not in self.workflows:
             raise FileNotFoundError(f"Workflow '{name}' not found.")
 
-        # Wrap the workflow in a WorkflowWrapper object for convenience
-        workflow = WorkflowWrapper(copy.deepcopy(self.workflows[name]))
+        # Wrap the workflow in a Workflow object for convenience
+        workflow = Workflow(copy.deepcopy(self.workflows[name]))
 
         # Bypass any nodes tagged with "!bypass" if present
         workflow.bypass_nodes("!bypass")
@@ -237,8 +238,8 @@ class WorkflowManager:
                         # Update the workflow with the value
                         workflow.update_tagged_nodes_input(tag, input_name, value)
 
-        # Run the workflow asynchronously using the configured client
-        images = await (await config.client()).run(workflow)
+        # Run the workflow asynchronously using the ComfyUI service
+        images = await comfyui_service.run_workflow(workflow)
         response = {}
 
         # Collect and group the resulting images by each node's tags
@@ -268,7 +269,7 @@ class WorkflowManager:
         :param name: The name of the workflow to retrieve information from.
         :return: A dictionary containing the workflow's name, its tagged inputs, and outputs.
         """
-        wrapper = WorkflowWrapper(self.workflows[name])
+        wrapper = Workflow(self.workflows[name])
         return {
             "name": name,
             "inputs": wrapper.get_tagged_inputs(),
