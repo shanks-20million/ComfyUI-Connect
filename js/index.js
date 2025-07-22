@@ -42,7 +42,7 @@ app.registerExtension({
           name,
         };
 
-        const { output } = await app.graphToPrompt();
+        const { workflow: output } = await app.graphToPrompt();
         await api
           .fetchApi("/connect/workflows", {
             method: "PUT",
