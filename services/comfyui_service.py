@@ -43,9 +43,13 @@ class ComfyUIService:
             return
 
         self.session = aiohttp.ClientSession()
-        self.ws = await self.session.ws_connect(
-            f"ws://{config.comfy_endpoint}/ws?clientId={self.CLIENT_ID}"
-        )
+        
+        # Build WebSocket URL with token if available
+        ws_url = f"ws://{config.comfy_endpoint}/ws?clientId={self.CLIENT_ID}"
+        if config.comfy_token:
+            ws_url += f"&token={config.comfy_token}"
+            
+        self.ws = await self.session.ws_connect(ws_url)
         # Start the global websocket listener
         self._listener_task = asyncio.create_task(self._listen_websocket())
         self._connected = True
@@ -93,15 +97,21 @@ class ComfyUIService:
         await self._ensure_connected()
         payload = {"prompt": prompt, "client_id": self.CLIENT_ID}
         data = json.dumps(payload).encode("utf-8")
-        async with self.session.post(
-            f"http://{config.comfy_endpoint}/prompt", data=data
-        ) as response:
+        
+        # Build URL with token if available
+        url = f"http://{config.comfy_endpoint}/prompt"
+        if config.comfy_token:
+            url += f"?token={config.comfy_token}"
+            
+        async with self.session.post(url, data=data) as response:
             return await response.json()
 
     async def get_image(self, filename, subfolder, folder_type):
         """Retrieve an image from ComfyUI"""
         await self._ensure_connected()
         params = {"filename": filename, "subfolder": subfolder, "type": folder_type}
+        if config.comfy_token:
+            params["token"] = config.comfy_token
         url_values = urllib.parse.urlencode(params)
         async with self.session.get(
             f"http://{config.comfy_endpoint}/view?{url_values}"
@@ -113,9 +123,13 @@ class ComfyUIService:
     async def get_history(self, prompt_id):
         """Get execution history for a prompt"""
         await self._ensure_connected()
-        async with self.session.get(
-            f"http://{config.comfy_endpoint}/history/{prompt_id}"
-        ) as response:
+        
+        # Build URL with token if available, works for comfyui-login plugin
+        url = f"http://{config.comfy_endpoint}/history/{prompt_id}"
+        if config.comfy_token:
+            url += f"?token={config.comfy_token}"
+            
+        async with self.session.get(url) as response:
             return await response.json()
 
     async def run_workflow(self, workflow: dict) -> dict:

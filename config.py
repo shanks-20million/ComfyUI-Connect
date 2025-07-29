@@ -81,6 +81,11 @@ class Config:
             port = self._get_port_from_args()
         
         return f"{host}:{port}"
+    
+    @property
+    def comfy_token(self):
+        """Get ComfyUI authentication token from settings"""
+        return self.user_settings.get("Connect.ComfyUIToken", "")
 
 
 config = Config()
