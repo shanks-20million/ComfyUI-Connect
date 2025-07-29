@@ -32,6 +32,7 @@ class Config:
     def __init__(self):
         self._user_settings = None
         self._settings_loaded = False
+        self._override_token = None  # For temporary token override
     
     @property
     def user_settings(self):
@@ -85,7 +86,16 @@ class Config:
     @property
     def comfy_token(self):
         """Get ComfyUI authentication token from settings"""
-        return self.user_settings.get("Connect.ComfyUIToken", "")
+        # Check temporary override first, then environment variable, then user settings
+        return self._override_token or os.environ.get("COMFYUI_TOKEN") or self.user_settings.get("Connect.ComfyUIToken", "")
+    
+    def set_temp_token(self, token: str):
+        """Temporarily override the ComfyUI token"""
+        self._override_token = token
+        
+    def clear_temp_token(self):
+        """Clear the temporary token override"""
+        self._override_token = None
 
 
 config = Config()
