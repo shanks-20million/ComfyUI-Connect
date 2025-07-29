@@ -7,6 +7,7 @@ import base64
 import asyncio
 from typing import Dict, List
 from ..config import config
+from ..utils.helpers import connect_print
 
 
 class ComfyUIService:
@@ -48,6 +49,9 @@ class ComfyUIService:
         ws_url = f"ws://{config.comfy_endpoint}/ws?clientId={self.CLIENT_ID}"
         if config.comfy_token:
             ws_url += f"&token={config.comfy_token}"
+            connect_print("WebSocket connection using token authentication")
+        else:
+            connect_print("WebSocket connection using direct access (no token)")
             
         self.ws = await self.session.ws_connect(ws_url)
         # Start the global websocket listener
@@ -102,6 +106,9 @@ class ComfyUIService:
         url = f"http://{config.comfy_endpoint}/prompt"
         if config.comfy_token:
             url += f"?token={config.comfy_token}"
+            connect_print("Prompt execution using token authentication")
+        else:
+            connect_print("Prompt execution using direct access (no token)")
             
         async with self.session.post(url, data=data) as response:
             return await response.json()
@@ -112,6 +119,9 @@ class ComfyUIService:
         params = {"filename": filename, "subfolder": subfolder, "type": folder_type}
         if config.comfy_token:
             params["token"] = config.comfy_token
+            connect_print("Image retrieval using token authentication")
+        else:
+            connect_print("Image retrieval using direct access (no token)")
         url_values = urllib.parse.urlencode(params)
         async with self.session.get(
             f"http://{config.comfy_endpoint}/view?{url_values}"
@@ -128,6 +138,9 @@ class ComfyUIService:
         url = f"http://{config.comfy_endpoint}/history/{prompt_id}"
         if config.comfy_token:
             url += f"?token={config.comfy_token}"
+            connect_print("History retrieval using token authentication")
+        else:
+            connect_print("History retrieval using direct access (no token)")
             
         async with self.session.get(url) as response:
             return await response.json()
